@@ -1,0 +1,6 @@
+BattleofGlasgow(1544),55�51?29?N",4°15′32″W
+BattleofGlasgow(1560),55°51′29″N,4°15′32″W
+BattleofCravant,47°41′02″N,3°41′30″E
+BattleofFaughart,53°50′N,6°30′W
+BattleofLinlithgowBridge,55°58′45″N, 3°36′38″W
+BattleofVerneuil,48°44′22″N,0°55′43″E
