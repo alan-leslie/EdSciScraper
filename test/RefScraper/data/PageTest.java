@@ -71,4 +71,34 @@ public class PageTest {
             Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
+    
+       /**
+     * 
+     */
+    @Test
+    public void testListPage() {
+        try {
+            URL theURL = new URL("http://localhost/talk_list_page.html");
+//            URL theURL = new URL("http://www.sciencefestival.co.uk/whats-on/categories/talk?sort=date&page=1");
+            Logger theLogger = Logger.getLogger(PageTest.class.getName());
+        
+            EdSciEventListPage thePage = new EdSciEventListPage(theURL, theLogger);            
+            List<HTMLLink> candidates = thePage.getCandidates();
+            
+            assertEquals(10, candidates.size());
+            String theFirstURL = candidates.get(0).getHREF();
+            String theFirstTitle = candidates.get(0).getText();
+            
+            assert(theFirstURL.equalsIgnoreCase("http://www.sciencefestival.co.uk/whats-on/categories/talk/science-festival-church-service"));            
+            assert(theFirstTitle.equalsIgnoreCase("Science Festival Church service"));
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
+        }catch (IOException ex) {
+            Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ParserConfigurationException ex) {
+            Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SAXException ex) {
+            Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 }
