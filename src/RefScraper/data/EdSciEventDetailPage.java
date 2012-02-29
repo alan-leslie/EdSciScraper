@@ -1,11 +1,19 @@
 package RefScraper.data;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
@@ -13,6 +21,14 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -101,6 +117,24 @@ public class EdSciEventDetailPage {
     }
 
     /**
+     * Finds the venue name from the page.
+     * @return -valid position or null if unobtainable
+     */
+    public String getDuration() {
+        String theDuration = null;
+
+        if (theSummary == null) {
+            theSummary = getSummary();
+        }
+
+        if (theSummary != null) {
+            theDuration = getDurationFromSummary(theSummary);
+        }
+
+        return theDuration;
+    }
+
+    /**
      * Finds the period from the page.
      * @return -valid period or null if unobtainable
      */
@@ -111,9 +145,26 @@ public class EdSciEventDetailPage {
             theSummary = getSummary();
         }
 
-//        if (theSummary != null) {
-//            thePeriods = getDateFromSummary(theSummary);
-//        }
+        if (theSummary != null) {
+            String theDuration = getDurationFromSummary(theSummary);
+            String theDate = getDate();
+            String theEventId = getEventId();
+            String theTime = getTime(theEventId, theDate);
+            
+            SimpleDateFormat theDateFormat = new SimpleDateFormat("dd/mm/yyyy HH:mm");
+            theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+        
+            try {
+                Date startDate = theDateFormat.parse(theDate + " " + theTime); 
+                Date endDate = theDateFormat.parse(theDate + " " + theTime);  
+                endDate.setTime(endDate.getTime() + 90*60*1000);
+
+                Period thePeriod = new Period(startDate, endDate);
+                thePeriods.add(thePeriod);
+            } catch (ParseException ex) {
+                Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
 
         return thePeriods;
     }
@@ -130,10 +181,10 @@ public class EdSciEventDetailPage {
             XPath summaryTableXpath = XPathFactory.newInstance().newXPath();
             NodeList theData = (NodeList) summaryTableXpath.evaluate("html//div[@class='summary']/table/tbody/tr", theDocument, XPathConstants.NODESET);
 
-            if(theData != null){
+            if (theData != null) {
                 int theLength = theData.getLength();
-                
-                if(theLength > 0){
+
+                if (theLength > 0) {
                     return theData;
                 }
             }
@@ -206,6 +257,22 @@ public class EdSciEventDetailPage {
     }
 
     /**
+     * Try and get the name of the venue from the summary of the page
+     * @param summaryData 
+     * @return - valid venue name or null if not obtainable
+     */
+    private String getDurationFromSummary(NodeList summaryData) {
+        Node theValueNode = getValueNodeFromSummary(theSummary, "Duration:");
+        String retVal = null;
+
+        if (theValueNode != null) {
+            retVal = theValueNode.getTextContent();
+        }
+
+        return retVal;
+    }
+
+    /**
      * Try and get the latitude and longitude from the location reference URL
      * @param locationRef 
      * @return - valid position or null if unobtainable
@@ -213,41 +280,14 @@ public class EdSciEventDetailPage {
     private Position getLocationFromRef(URL locationRef) {
         Position refPosition = null;
 
-//        try {
-//            EdSciEventDetailPage thePage = new EdSciEventDetailPage(locationRef, theLogger);
-//            refPosition = thePage.getPageCoords();
-//        } catch (Exception e) {
-//            theLogger.log(Level.SEVERE, "Cannot get location page", e);
-//        }
-
-        return refPosition;
-    }
-
-    /**
-     * Try and get the period from page summary
-     * @param summaryData 
-     * @return - valid period or null if not obtainable
-     */
-    private Period getDateFromSummary(NodeList summaryData) {
-        Period summaryPeriod = null;
-        Node theValueNode = getValueNodeFromSummary(theSummary, "Duration:");
-
-        if (theValueNode != null) {
-            String detailText = theValueNode.getTextContent();
-            summaryPeriod = Period.getRealPeriod(detailText);
-
-            if (summaryPeriod == null) {
-                Date theDate = Period.getDate(detailText);
-
-                if (theDate != null) {
-                    summaryPeriod = new Period(theDate, theDate);
-                } else {
-                    theLogger.log(Level.WARNING, "Cannot get date");
-                }
-            }
+        try {
+            EdSciEventDetailPage thePage = new EdSciEventDetailPage(locationRef, theLogger);
+            refPosition = thePage.getPageCoords();
+        } catch (Exception e) {
+            theLogger.log(Level.SEVERE, "Cannot get location page", e);
         }
 
-        return summaryPeriod;
+        return refPosition;
     }
 
     /**
@@ -337,5 +377,104 @@ public class EdSciEventDetailPage {
         }
 
         return dataValueNode;
+    }
+
+    private Position getPageCoords() {
+        Position thePosition = null;
+
+        try {
+            XPath mapIdXpath = XPathFactory.newInstance().newXPath();
+            Node theNode = (Node) mapIdXpath.evaluate("html//div[@id='google-map']", theDocument, XPathConstants.NODE);
+
+            if (theNode != null) {
+                NamedNodeMap theAttributes = theNode.getAttributes();
+                Node theValueNode = theAttributes.getNamedItem("class");
+                String theMapString = theValueNode.getNodeValue();
+                int indexOfFirstOpenSqBracket = theMapString.indexOf("[");
+                int indexOfFirstCloseSqBracket = theMapString.indexOf("]");
+                
+                if(indexOfFirstOpenSqBracket > 0 && indexOfFirstCloseSqBracket > 0){
+                    String theCoordString = theMapString.substring(indexOfFirstOpenSqBracket + 1, indexOfFirstCloseSqBracket);
+                    String[] splitCoords = theCoordString.split(",");
+                    
+                    if(splitCoords.length > 1){
+                        String theLat = splitCoords[0].substring(1, splitCoords[0].length() -1);
+                        String theLon = splitCoords[1].substring(1, splitCoords[1].length() -1);
+                        
+                        thePosition = new Position(theLat, theLon);                       
+                    }
+                }
+            }
+        } catch (XPathExpressionException ex) {
+            theLogger.log(Level.SEVERE, null, ex);
+        }
+
+        return thePosition;
+    }
+
+    private String getTime(String eventId,
+            String theDate) {
+        String retVal = null;
+        StringBuilder theBuilder = new StringBuilder("http://www.sciencefestival.co.uk/json_event_performances?booking[event_id]=");
+        theBuilder.append(eventId);
+        theBuilder.append("&booking[date]=");
+        String theDateAsURLString = theDate.replace("/", "%2F");
+        theBuilder.append(theDateAsURLString);
+        String theTimeURLStr = theBuilder.toString(); 
+        HttpClient client = new DefaultHttpClient();
+
+        try {
+            URL theTimeURL = new URL(theTimeURLStr);
+            HttpGet theGet = new HttpGet(theTimeURL.toString());
+            HttpResponse response = client.execute(theGet);
+
+            HttpEntity theEntity = response.getEntity();  
+            InputStream in = null;
+            
+            try {
+                in = theEntity.getContent();
+                StringBuffer buffer = new StringBuffer();
+                
+                InputStreamReader isr = new InputStreamReader(in, "UTF8");
+                Reader theReader = new BufferedReader(isr);
+                int ch;
+                while ((ch = theReader.read()) > -1) {
+                        buffer.append((char)ch);
+                }
+                in.close();
+                String theJSONData = buffer.toString();
+                try {
+                    JSONObject theObject = new JSONObject(theJSONData);
+                    JSONObject theTimes = (JSONObject)theObject.get("times");
+                    JSONArray names = theTimes.names();
+                    
+                    int arrayLength = names.length();
+                    
+                    if(arrayLength > 0){
+                        retVal = names.getString(0);
+                    }
+                } catch (JSONException ex) {
+                    Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } catch (UnsupportedEncodingException ex) {
+                Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
+            } finally {
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (Exception e) {
+                    }
+                }
+            } 
+        } catch (IOException ex) {
+            Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            // When HttpClient instance is no longer needed,
+            // shut down the connection manager to ensure
+            // immediate deallocation of all system resources
+            client.getConnectionManager().shutdown();
+        }
+        
+        return retVal;
     }
 }

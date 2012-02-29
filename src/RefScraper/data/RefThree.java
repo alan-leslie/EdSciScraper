@@ -237,7 +237,7 @@ public class RefThree implements Comparable {
             EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, theLogger);
 
             thePosition = thePage.getPosition();
-            thePeriod = thePage.getPeriod();
+//            thePeriod = thePage.getPeriod();
 
             // try to recover if data is only partially set
             if ((isPeriodSet() || isPositionSet()) && !(isPeriodSet() && isPositionSet())) {
@@ -250,7 +250,7 @@ public class RefThree implements Comparable {
                 }
             }
 
-            theResult = thePage.getResult().replace("&", "and");
+//            theResult = thePage.getResult().replace("&", "and");
 
             if (isPeriodSet()) {
                 dateString = thePeriod.asLongString();
