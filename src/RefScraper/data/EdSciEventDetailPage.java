@@ -117,24 +117,6 @@ public class EdSciEventDetailPage {
     }
 
     /**
-     * Finds the venue name from the page.
-     * @return -valid position or null if unobtainable
-     */
-    public String getDuration() {
-        String theDuration = null;
-
-        if (theSummary == null) {
-            theSummary = getSummary();
-        }
-
-        if (theSummary != null) {
-            theDuration = getDurationFromSummary(theSummary);
-        }
-
-        return theDuration;
-    }
-
-    /**
      * Finds the period from the page.
      * @return -valid period or null if unobtainable
      */
@@ -146,18 +128,18 @@ public class EdSciEventDetailPage {
         }
 
         if (theSummary != null) {
-            String theDuration = getDurationFromSummary(theSummary);
+            int theDuration = getDurationMinutesFromSummary(theSummary);
             String theDate = getDate();
             String theEventId = getEventId();
             String theTime = getTime(theEventId, theDate);
             
-            SimpleDateFormat theDateFormat = new SimpleDateFormat("dd/mm/yyyy HH:mm");
+            SimpleDateFormat theDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
             theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         
             try {
                 Date startDate = theDateFormat.parse(theDate + " " + theTime); 
                 Date endDate = theDateFormat.parse(theDate + " " + theTime);  
-                endDate.setTime(endDate.getTime() + 90*60*1000);
+                endDate.setTime(endDate.getTime() + theDuration*60*1000);
 
                 Period thePeriod = new Period(startDate, endDate);
                 thePeriods.add(thePeriod);
@@ -256,6 +238,24 @@ public class EdSciEventDetailPage {
         return retVal;
     }
 
+    private int getDurationMinutesFromSummary(NodeList summaryData) {
+        int durationInMinutes = 0;
+        String durationString = getDurationFromSummary(summaryData);
+        String[] durationBits = durationString.split(" ");
+        
+        if(durationBits.length > 1){
+            if(durationBits[1].contains("mins")){
+                durationInMinutes = Integer.parseInt(durationBits[0]);          
+            } else {
+                if(durationBits[1].contains("hour")){
+                    durationInMinutes = Integer.parseInt(durationBits[0]) * 60;          
+                }      
+            }         
+        }
+        
+        return durationInMinutes;
+    }
+
     /**
      * Try and get the name of the venue from the summary of the page
      * @param summaryData 
@@ -294,7 +294,7 @@ public class EdSciEventDetailPage {
      * get the event id from the page
      * @return - the result or "?" if not found
      */
-    String getEventId() {
+    private String getEventId() {
         String retVal = "?";
 
         try {
@@ -317,7 +317,7 @@ public class EdSciEventDetailPage {
      * get the event id from the page
      * @return - the result or "?" if not found
      */
-    String getDate() {
+    private String getDate() {
         String retVal = "?";
 
         try {
