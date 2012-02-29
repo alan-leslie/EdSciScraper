@@ -2,8 +2,13 @@ package RefScraper.data;
 
 import java.io.IOException;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
@@ -95,6 +100,41 @@ public class EdSciEventListPage {
                     theLogger.log(Level.INFO, "Found candidate :{0}", theTitle);
                     HTMLLink theCandidate = new HTMLLink(theTitle, theHREF);
                     theCandidates.add(theCandidate);
+                }
+                
+//                String detailsSearchString = "../div[@class='details']/table/tr";  
+                String detailsSearchString = "../div[@class='details']/table";  
+                XPath detailsXpath = XPathFactory.newInstance().newXPath();
+                NodeList detailsNodeList = (NodeList) detailsXpath.evaluate(detailsSearchString, childNode, XPathConstants.NODESET);
+                
+                if(detailsNodeList != null){
+                    boolean dateFound = false;
+                    int detailsLength = detailsNodeList.getLength();
+                    
+                    if(detailsLength > 0){
+                        Node theTable = detailsNodeList.item(0);
+                        String theContent = theTable.getTextContent().trim();
+                        String[] theContentBits = theContent.split("\n");
+                        String dateString = "";
+                        
+                        if(theContentBits.length > 1){
+                            String theHeaderBit = theContentBits[0].trim();
+                            String theDetailBit = theContentBits[1].trim();                            
+                            
+                            if(theHeaderBit.equalsIgnoreCase("Date:")){
+                                dateString = theDetailBit;
+                            }
+                        }
+                        
+                        DateFormat theDateFormat = new SimpleDateFormat("EEE dd MMM");
+                        theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+                        try{
+                            Date startDate = theDateFormat.parse(dateString);  
+                        } catch (ParseException ex) {
+                            theLogger.log(Level.SEVERE, null, ex);
+                        }  
+                    }
                 }
             }
         } catch (Exception e) {

@@ -113,10 +113,10 @@ public class EdSciEventDetailPage {
 
     /**
      * Finds the venue name from the page.
-     * @return -valid position or null if unobtainable
+     * @return -valid venue name or "" if unobtainable
      */
     public String getVenueName() {
-        String theVenueName = null;
+        String theVenueName = "";
         
         if (theSummary == null) {
             theSummary = getSummary();
@@ -127,6 +127,42 @@ public class EdSciEventDetailPage {
         }
         
         return theVenueName;
+    }
+    
+    /**
+     * Finds the ages name from the page.
+     * @return -valid ages string "" if unobtainable
+     */
+    public String getAges() {
+        String theAges = "";
+        
+        if (theSummary == null) {
+            theSummary = getSummary();
+        }
+        
+        if (theSummary != null) {
+            theAges = getAgesFromSummary(theSummary);
+        }
+        
+        return theAges;
+    }
+    
+        /**
+     * Finds the price name from the page.
+     * @return -valid position or null if unobtainable
+     */
+    public String getPrice() {
+        String thePrice = "";
+        
+        if (theSummary == null) {
+            theSummary = getSummary();
+        }
+        
+        if (theSummary != null) {
+            thePrice = getPriceFromSummary(theSummary);
+        }
+        
+        return thePrice;
     }
 
     /**
@@ -157,7 +193,7 @@ public class EdSciEventDetailPage {
                 Period thePeriod = new Period(startDate, endDate);
                 thePeriods.add(thePeriod);
             } catch (ParseException ex) {
-                Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
+                theLogger.log(Level.SEVERE, null, ex);
             }
         }
         
@@ -272,7 +308,7 @@ public class EdSciEventDetailPage {
     /**
      * Try and get the name of the venue from the summary of the page
      * @param summaryData 
-     * @return - valid venue name or null if not obtainable
+     * @return - valid venue name or "" not obtainable
      */
     private String getDurationFromSummary(NodeList summaryData) {
         Node theValueNode = getValueNodeFromSummary(theSummary, "Duration:");
@@ -285,6 +321,38 @@ public class EdSciEventDetailPage {
         return retVal;
     }
 
+    /**
+     * Try and get ages from the summary of the page
+     * @param summaryData 
+     * @return valid ages string or "" if not obtainable
+     */
+    private String getAgesFromSummary(NodeList summaryData) {
+        Node theValueNode = getValueNodeFromSummary(theSummary, "Suitable For Ages:");
+        String retVal = "";
+        
+        if (theValueNode != null) {
+            retVal = theValueNode.getTextContent();
+        }
+        
+        return retVal;
+    }
+    
+   /**
+     * Try and get the price from the summary of the page
+     * @param summaryData 
+     * @return - valid price string or "" if not obtainable
+     */
+    private String getPriceFromSummary(NodeList summaryData) {
+        Node theValueNode = getValueNodeFromSummary(theSummary, "Price:");
+        String retVal = "";
+        
+        if (theValueNode != null) {
+            retVal = theValueNode.getTextContent();
+        }
+        
+        return retVal;
+    }
+    
     /**
      * Try and get the latitude and longitude from the location reference URL
      * @param locationRef 
@@ -307,7 +375,7 @@ public class EdSciEventDetailPage {
      * get the event id from the page
      * @return - the result or "?" if not found
      */
-    private String getEventId() {
+    public String getEventId() {
         String retVal = "?";
         
         try {
@@ -466,11 +534,16 @@ public class EdSciEventDetailPage {
                     if (arrayLength > 0) {
                         retVal = names.getString(0);
                     }
+                    
+                    if(arrayLength > 1){       
+                        String logMessage = "There is more than one time for" + getURL().toString();
+                        theLogger.log(Level.SEVERE, logMessage);
+                    }
                 } catch (JSONException ex) {
-                    Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
+                    theLogger.log(Level.SEVERE, null, ex);
                 }
             } catch (UnsupportedEncodingException ex) {
-                Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
+                theLogger.log(Level.SEVERE, null, ex);
             } finally {
                 if (in != null) {
                     try {
@@ -480,7 +553,7 @@ public class EdSciEventDetailPage {
                 }
             }            
         } catch (IOException ex) {
-            Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
+            theLogger.log(Level.SEVERE, null, ex);
         } finally {
             // When HttpClient instance is no longer needed,
             // shut down the connection manager to ensure

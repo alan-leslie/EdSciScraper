@@ -28,7 +28,7 @@ public class Main {
         FileInputStream is = null;
 
         try {
-            is = new FileInputStream("RefScraper.properties");
+            is = new FileInputStream("EdSciScraper.properties");
             properties.load(is);
         } catch (IOException e) {
             // ...
@@ -44,7 +44,7 @@ public class Main {
 
         String poolSizeStr = properties.getProperty("PoolSize", "2");
         int poolSize = Integer.parseInt(poolSizeStr);
-        String theURL = properties.getProperty("StartURL", "http://en.wikipedia.org/wiki/Category:Battles_involving_Scotland");
+        String theURL = properties.getProperty("StartURL", "http://www.sciencefestival.co.uk/whats-on/categories/talk?sort=date&page=1");
         String theOutputDir = properties.getProperty("OutputDir", ".");
         String theAsKML = properties.getProperty("AsKML", "true");
         

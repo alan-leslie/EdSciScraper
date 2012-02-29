@@ -3,6 +3,7 @@ package RefScraper.data;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,13 +15,17 @@ public class RefThree implements Comparable {
 
     String theName;
     private String dateString;
-    private String theResult;
     private Position thePosition;
     private URL theLocationRef;
     private URL thePlace;
     private Period thePeriod;
     private URL theURL;
     private String theHREF;
+    private String theAges = "";
+    private String thePrice = "";
+    private String theEventId = "";
+    private String theVenueName = "";
+    
     private final Logger theLogger;
 
     /**
@@ -34,14 +39,14 @@ public class RefThree implements Comparable {
             Logger logger) {
         this.theHREF = theHREF;
         String thePageHREF = theHREF;
+        theLogger = logger;
 
         try {
             theURL = new URL(thePageHREF);
         } catch (MalformedURLException ex) {
-            Logger.getLogger(RefThree.class.getName()).log(Level.SEVERE, null, ex);
+            theLogger.log(Level.SEVERE, null, ex);
         }
         theName = theTitle;
-        theLogger = logger;
     }
 
     /**
@@ -63,7 +68,10 @@ public class RefThree implements Comparable {
             thePeriod = new Period(theOther.thePeriod.getStartDate(), theOther.thePeriod.getEndDate());
         }
         theURL = theOther.theURL;
-        theResult = theOther.theResult;
+        theVenueName = theOther.theVenueName;
+        thePrice = theOther.thePrice;
+        theAges = theOther.theAges;
+        theEventId = theOther.theEventId;
         dateString = theOther.dateString;
         theLogger = theOther.theLogger;
     }
@@ -127,11 +135,29 @@ public class RefThree implements Comparable {
 
             ps.print("<ExtendedData>");
             ps.println();
-            ps.println("<Data name=\"Result\">");
+            ps.println("<Data name=\"Ages\">");
             ps.print("<value>");
-            ps.print(theResult);
+            ps.print(theAges);
             ps.print("</value>");
             ps.println();
+            ps.println("</Data>");
+            ps.println("<Data name=\"Price\">");
+            ps.print("<value>");
+            ps.print(thePrice);
+            ps.print("</value>");
+            ps.println();
+            ps.println("</Data>");
+            ps.println("<Data name=\"EventId\">");
+            ps.print("<value>");
+            ps.print(theEventId);
+            ps.print("</value>");
+            ps.println();
+            ps.println("</Data>");
+            ps.println("<Data name=\"VenueName\">");
+            ps.print("<value>");
+            ps.print(theVenueName);
+            ps.print("</value>");
+            ps.println();   
             ps.println("</Data>");
             ps.println("<Data name=\"DateString\">");
             ps.print("<value>");
@@ -214,14 +240,6 @@ public class RefThree implements Comparable {
 
     /**
      * 
-     * @return - the result
-     */
-    public String getResult() {
-        return theResult;
-    }
-
-    /**
-     * 
      * @return - the position 
      */
     public Position getPosition() {
@@ -237,7 +255,10 @@ public class RefThree implements Comparable {
             EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, theLogger);
 
             thePosition = thePage.getPosition();
-//            thePeriod = thePage.getPeriod();
+            List<Period> thePeriods = thePage.getPeriods();
+            if(thePeriods != null && thePeriods.size() > 0){
+                thePeriod = thePeriods.get(0);
+            }
 
             // try to recover if data is only partially set
             if ((isPeriodSet() || isPositionSet()) && !(isPeriodSet() && isPositionSet())) {
@@ -249,8 +270,11 @@ public class RefThree implements Comparable {
                     thePosition = PositionMap.getInstance().getPosition(getId());
                 }
             }
-
-//            theResult = thePage.getResult().replace("&", "and");
+            
+            theEventId = thePage.getEventId();
+            theVenueName = thePage.getVenueName();
+            theAges = thePage.getAges();
+            thePrice = thePage.getPrice();
 
             if (isPeriodSet()) {
                 dateString = thePeriod.asLongString();
