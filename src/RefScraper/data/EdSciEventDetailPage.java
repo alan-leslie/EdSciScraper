@@ -41,7 +41,7 @@ import org.xml.sax.SAXException;
  * @author al
  */
 public class EdSciEventDetailPage {
-
+    
     private final URL theURL;
     private final Document theDocument;
     private final Logger theLogger;
@@ -86,15 +86,28 @@ public class EdSciEventDetailPage {
      */
     public Position getPosition() {
         Position thePosition = null;
-
+        
         if (theSummary == null) {
             theSummary = getSummary();
         }
-
+        
         if (theSummary != null) {
-            thePosition = getVenuePositionFromSummary(theSummary);
+            String theVenueName = getVenueNameFromSummary(theSummary);
+            
+            if (theVenueName != null) {
+                PositionMap thePosMap = PositionMap.getInstance();
+                thePosition = thePosMap.getPosition(theVenueName);
+                
+                if (thePosition == null) {
+                    thePosition = getVenuePositionFromSummary(theSummary);
+                    if (thePosition != null) {
+                        thePosMap.addPosition(theVenueName, thePosition);
+                    }
+                }
+            }
+            
         }
-
+        
         return thePosition;
     }
 
@@ -104,15 +117,15 @@ public class EdSciEventDetailPage {
      */
     public String getVenueName() {
         String theVenueName = null;
-
+        
         if (theSummary == null) {
             theSummary = getSummary();
         }
-
+        
         if (theSummary != null) {
             theVenueName = getVenueNameFromSummary(theSummary);
         }
-
+        
         return theVenueName;
     }
 
@@ -122,11 +135,11 @@ public class EdSciEventDetailPage {
      */
     public List<Period> getPeriods() {
         List<Period> thePeriods = new ArrayList<Period>();
-
+        
         if (theSummary == null) {
             theSummary = getSummary();
         }
-
+        
         if (theSummary != null) {
             int theDuration = getDurationMinutesFromSummary(theSummary);
             String theDate = getDate();
@@ -135,19 +148,19 @@ public class EdSciEventDetailPage {
             
             SimpleDateFormat theDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
             theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-        
+            
             try {
-                Date startDate = theDateFormat.parse(theDate + " " + theTime); 
-                Date endDate = theDateFormat.parse(theDate + " " + theTime);  
-                endDate.setTime(endDate.getTime() + theDuration*60*1000);
-
+                Date startDate = theDateFormat.parse(theDate + " " + theTime);                
+                Date endDate = theDateFormat.parse(theDate + " " + theTime);                
+                endDate.setTime(endDate.getTime() + theDuration * 60 * 1000);
+                
                 Period thePeriod = new Period(startDate, endDate);
                 thePeriods.add(thePeriod);
             } catch (ParseException ex) {
                 Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-
+        
         return thePeriods;
     }
 
@@ -158,14 +171,14 @@ public class EdSciEventDetailPage {
      */
     private NodeList getSummary() {
         NodeList retVal = null;
-
+        
         try {
             XPath summaryTableXpath = XPathFactory.newInstance().newXPath();
             NodeList theData = (NodeList) summaryTableXpath.evaluate("html//div[@class='summary']/table/tbody/tr", theDocument, XPathConstants.NODESET);
-
+            
             if (theData != null) {
                 int theLength = theData.getLength();
-
+                
                 if (theLength > 0) {
                     return theData;
                 }
@@ -173,7 +186,7 @@ public class EdSciEventDetailPage {
         } catch (XPathExpressionException ex) {
             theLogger.log(Level.SEVERE, null, ex);
         }
-
+        
         return retVal;
     }
 
@@ -185,19 +198,19 @@ public class EdSciEventDetailPage {
     private Position getVenuePositionFromSummary(NodeList summaryData) {
         Node theValueNode = getValueNodeFromSummary(theSummary, "Venue:");
         Position summaryPosition = null;
-
+        
         try {
             if (theValueNode != null) {
                 XPath anchorXpath = XPathFactory.newInstance().newXPath();
                 Node theAnchor = (Node) anchorXpath.evaluate("./a", theValueNode, XPathConstants.NODE);
-
+                
                 if (theAnchor != null) {
                     Element thePlaceElement = (Element) theAnchor;
                     String thePlaceHREF = thePlaceElement.getAttribute("href");
                     if (thePlaceHREF.indexOf("http://") != 0) {
                         thePlaceHREF = EdSciEventDetailPage.getBaseURL() + thePlaceHREF;
                     }
-
+                    
                     try {
                         URL theLocationRef = new URL(thePlaceHREF);
                         summaryPosition = getLocationFromRef(theLocationRef);
@@ -209,7 +222,7 @@ public class EdSciEventDetailPage {
         } catch (XPathExpressionException ex) {
             theLogger.log(Level.SEVERE, null, ex);
         }
-
+        
         return summaryPosition;
     }
 
@@ -221,12 +234,12 @@ public class EdSciEventDetailPage {
     private String getVenueNameFromSummary(NodeList summaryData) {
         Node theValueNode = getValueNodeFromSummary(theSummary, "Venue:");
         String retVal = null;
-
+        
         try {
             if (theValueNode != null) {
                 XPath anchorXpath = XPathFactory.newInstance().newXPath();
                 Node theAnchor = (Node) anchorXpath.evaluate("./a", theValueNode, XPathConstants.NODE);
-
+                
                 if (theAnchor != null) {
                     retVal = theAnchor.getTextContent();
                 }
@@ -234,23 +247,23 @@ public class EdSciEventDetailPage {
         } catch (XPathExpressionException ex) {
             theLogger.log(Level.SEVERE, null, ex);
         }
-
+        
         return retVal;
     }
-
+    
     private int getDurationMinutesFromSummary(NodeList summaryData) {
         int durationInMinutes = 0;
         String durationString = getDurationFromSummary(summaryData);
         String[] durationBits = durationString.split(" ");
         
-        if(durationBits.length > 1){
-            if(durationBits[1].contains("mins")){
-                durationInMinutes = Integer.parseInt(durationBits[0]);          
+        if (durationBits.length > 1) {
+            if (durationBits[1].contains("mins")) {
+                durationInMinutes = Integer.parseInt(durationBits[0]);                
             } else {
-                if(durationBits[1].contains("hour")){
-                    durationInMinutes = Integer.parseInt(durationBits[0]) * 60;          
-                }      
-            }         
+                if (durationBits[1].contains("hour")) {
+                    durationInMinutes = Integer.parseInt(durationBits[0]) * 60;                    
+                }                
+            }            
         }
         
         return durationInMinutes;
@@ -264,11 +277,11 @@ public class EdSciEventDetailPage {
     private String getDurationFromSummary(NodeList summaryData) {
         Node theValueNode = getValueNodeFromSummary(theSummary, "Duration:");
         String retVal = null;
-
+        
         if (theValueNode != null) {
             retVal = theValueNode.getTextContent();
         }
-
+        
         return retVal;
     }
 
@@ -279,14 +292,14 @@ public class EdSciEventDetailPage {
      */
     private Position getLocationFromRef(URL locationRef) {
         Position refPosition = null;
-
+        
         try {
             EdSciEventDetailPage thePage = new EdSciEventDetailPage(locationRef, theLogger);
             refPosition = thePage.getPageCoords();
         } catch (Exception e) {
             theLogger.log(Level.SEVERE, "Cannot get location page", e);
         }
-
+        
         return refPosition;
     }
 
@@ -296,11 +309,11 @@ public class EdSciEventDetailPage {
      */
     private String getEventId() {
         String retVal = "?";
-
+        
         try {
             XPath eventIdXpath = XPathFactory.newInstance().newXPath();
             Node theNode = (Node) eventIdXpath.evaluate("html//input[@id='booking_event_id']", theDocument, XPathConstants.NODE);
-
+            
             if (theNode != null) {
                 NamedNodeMap theAttributes = theNode.getAttributes();
                 Node theValueNode = theAttributes.getNamedItem("value");
@@ -309,7 +322,7 @@ public class EdSciEventDetailPage {
         } catch (XPathExpressionException ex) {
             theLogger.log(Level.SEVERE, null, ex);
         }
-
+        
         return retVal;
     }
 
@@ -319,11 +332,11 @@ public class EdSciEventDetailPage {
      */
     private String getDate() {
         String retVal = "?";
-
+        
         try {
             XPath eventIdXpath = XPathFactory.newInstance().newXPath();
             Node theNode = (Node) eventIdXpath.evaluate("html//input[@id='booking_date']", theDocument, XPathConstants.NODE);
-
+            
             if (theNode != null) {
                 NamedNodeMap theAttributes = theNode.getAttributes();
                 Node theValueNode = theAttributes.getNamedItem("value");
@@ -332,7 +345,7 @@ public class EdSciEventDetailPage {
         } catch (XPathExpressionException ex) {
             theLogger.log(Level.SEVERE, null, ex);
         }
-
+        
         return retVal;
     }
 
@@ -347,45 +360,45 @@ public class EdSciEventDetailPage {
     private Node getValueNodeFromSummary(NodeList summaryData,
             String dataName) {
         Node dataValueNode = null;
-
+        
         try {
             int theLength = summaryData.getLength();
             boolean dataFound = false;
-
+            
             for (int i = 0; i < theLength && !dataFound; ++i) {
                 XPath headerXpath = XPathFactory.newInstance().newXPath();
                 Node theHeaderNode = (Node) headerXpath.evaluate("./th", summaryData.item(i), XPathConstants.NODE);
-
+                
                 if (theHeaderNode != null) {
                     String theHeaderStr = theHeaderNode.getTextContent();
-
+                    
                     if (theHeaderStr.equalsIgnoreCase(dataName)) {
                         XPath detailXpath = XPathFactory.newInstance().newXPath();
                         Node theDetail = (Node) detailXpath.evaluate("./td", summaryData.item(i), XPathConstants.NODE);
-
+                        
                         if (theDetail != null) {
                             dataValueNode = theDetail;
                         }
-
+                        
                         dataFound = true;
                     }
                 }
-
+                
             }
         } catch (XPathExpressionException ex) {
             theLogger.log(Level.SEVERE, null, ex);
         }
-
+        
         return dataValueNode;
     }
-
+    
     private Position getPageCoords() {
         Position thePosition = null;
-
+        
         try {
             XPath mapIdXpath = XPathFactory.newInstance().newXPath();
             Node theNode = (Node) mapIdXpath.evaluate("html//div[@id='google-map']", theDocument, XPathConstants.NODE);
-
+            
             if (theNode != null) {
                 NamedNodeMap theAttributes = theNode.getAttributes();
                 Node theValueNode = theAttributes.getNamedItem("class");
@@ -393,25 +406,25 @@ public class EdSciEventDetailPage {
                 int indexOfFirstOpenSqBracket = theMapString.indexOf("[");
                 int indexOfFirstCloseSqBracket = theMapString.indexOf("]");
                 
-                if(indexOfFirstOpenSqBracket > 0 && indexOfFirstCloseSqBracket > 0){
+                if (indexOfFirstOpenSqBracket > 0 && indexOfFirstCloseSqBracket > 0) {
                     String theCoordString = theMapString.substring(indexOfFirstOpenSqBracket + 1, indexOfFirstCloseSqBracket);
                     String[] splitCoords = theCoordString.split(",");
                     
-                    if(splitCoords.length > 1){
-                        String theLat = splitCoords[0].substring(1, splitCoords[0].length() -1);
-                        String theLon = splitCoords[1].substring(1, splitCoords[1].length() -1);
+                    if (splitCoords.length > 1) {
+                        String theLat = splitCoords[0].substring(1, splitCoords[0].length() - 1);
+                        String theLon = splitCoords[1].substring(1, splitCoords[1].length() - 1);
                         
-                        thePosition = new Position(theLat, theLon);                       
+                        thePosition = new Position(theLat, theLon);                        
                     }
                 }
             }
         } catch (XPathExpressionException ex) {
             theLogger.log(Level.SEVERE, null, ex);
         }
-
+        
         return thePosition;
     }
-
+    
     private String getTime(String eventId,
             String theDate) {
         String retVal = null;
@@ -420,15 +433,15 @@ public class EdSciEventDetailPage {
         theBuilder.append("&booking[date]=");
         String theDateAsURLString = theDate.replace("/", "%2F");
         theBuilder.append(theDateAsURLString);
-        String theTimeURLStr = theBuilder.toString(); 
+        String theTimeURLStr = theBuilder.toString();        
         HttpClient client = new DefaultHttpClient();
-
+        
         try {
             URL theTimeURL = new URL(theTimeURLStr);
             HttpGet theGet = new HttpGet(theTimeURL.toString());
             HttpResponse response = client.execute(theGet);
-
-            HttpEntity theEntity = response.getEntity();  
+            
+            HttpEntity theEntity = response.getEntity();            
             InputStream in = null;
             
             try {
@@ -439,18 +452,18 @@ public class EdSciEventDetailPage {
                 Reader theReader = new BufferedReader(isr);
                 int ch;
                 while ((ch = theReader.read()) > -1) {
-                        buffer.append((char)ch);
+                    buffer.append((char) ch);
                 }
                 in.close();
                 String theJSONData = buffer.toString();
                 try {
                     JSONObject theObject = new JSONObject(theJSONData);
-                    JSONObject theTimes = (JSONObject)theObject.get("times");
+                    JSONObject theTimes = (JSONObject) theObject.get("times");
                     JSONArray names = theTimes.names();
                     
                     int arrayLength = names.length();
                     
-                    if(arrayLength > 0){
+                    if (arrayLength > 0) {
                         retVal = names.getString(0);
                     }
                 } catch (JSONException ex) {
@@ -465,7 +478,7 @@ public class EdSciEventDetailPage {
                     } catch (Exception e) {
                     }
                 }
-            } 
+            }            
         } catch (IOException ex) {
             Logger.getLogger(EdSciEventDetailPage.class.getName()).log(Level.SEVERE, null, ex);
         } finally {

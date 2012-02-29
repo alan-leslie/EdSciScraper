@@ -64,4 +64,13 @@ public class PositionMap {
         Position thePos = theMap.get(key);
         return thePos;
     }
+    
+        /*
+     * @param - the key of the position searched for
+     * @return - position corresponding to the key or null if not found
+     */
+
+    synchronized void addPosition(String key, Position thePosition) {
+        theMap.put(key, thePosition);
+    }
 }

@@ -28,7 +28,8 @@ public class PageTest {
     @Test
     public void testDetailPage() {
         try {
-            URL theURL = new URL("http://localhost/the-story-of-time");
+//            URL theURL = new URL("http://localhost/the-story-of-time");
+            URL theURL = new URL("http://www.sciencefestival.co.uk/whats-on/categories/talk/the-story-of-time");
             Logger theLogger = Logger.getLogger(PageTest.class.getName());
         
             EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, theLogger);            
