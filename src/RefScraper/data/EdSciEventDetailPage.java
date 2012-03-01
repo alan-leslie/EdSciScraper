@@ -43,6 +43,7 @@ import org.xml.sax.SAXException;
 public class EdSciEventDetailPage {
 
     private final URL theURL;
+    private final String theDateString;
     private final Document theDocument;
     private final Logger theLogger;
     private NodeList theSummary = null;
@@ -57,9 +58,11 @@ public class EdSciEventDetailPage {
      * @throws SAXException  
      */
     public EdSciEventDetailPage(URL newURL,
+            String theDateString,
             Logger logger) throws IOException, ParserConfigurationException, SAXException {
         theURL = newURL;
         theLogger = logger;
+        this.theDateString = theDateString;
         HTMLPageParser theParser = new HTMLPageParser(theLogger);
         theDocument = theParser.getParsedPage(theURL);
     }
@@ -171,6 +174,7 @@ public class EdSciEventDetailPage {
      */
     public List<Period> getPeriods() {
         List<Period> thePeriods = new ArrayList<Period>();
+        List<String> theDates = getDates();
 
         if (theSummary == null) {
             theSummary = getSummary();
@@ -178,26 +182,61 @@ public class EdSciEventDetailPage {
 
         if (theSummary != null) {
             int theDuration = getDurationMinutesFromSummary(theSummary);
-            String theDate = getDate();
             String theEventId = getEventId();
-            String theTime = getTime(theEventId, theDate);
+            
+            for(String theDate: theDates){         
+                String theTime = getTime(theEventId, theDate);
 
-            SimpleDateFormat theDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-            theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                SimpleDateFormat theDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+                theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-            try {
-                Date startDate = theDateFormat.parse(theDate + " " + theTime);
-                Date endDate = theDateFormat.parse(theDate + " " + theTime);
-                endDate.setTime(endDate.getTime() + theDuration * 60 * 1000);
+                try {
+                    Date startDate = theDateFormat.parse(theDate + " " + theTime);
+                    Date endDate = theDateFormat.parse(theDate + " " + theTime);
+                    endDate.setTime(endDate.getTime() + theDuration * 60 * 1000);
 
-                Period thePeriod = new Period(startDate, endDate);
-                thePeriods.add(thePeriod);
-            } catch (ParseException ex) {
-                theLogger.log(Level.SEVERE, null, ex);
+                    Period thePeriod = new Period(startDate, endDate);
+                    thePeriods.add(thePeriod);
+                } catch (ParseException ex) {
+                    theLogger.log(Level.SEVERE, null, ex);
+                }
             }
         }
 
         return thePeriods;
+    }
+
+    private List<String> getDates() {
+        List<String> theDates = new ArrayList<String>();
+        int theIndex = theDateString.indexOf(" - ");
+        
+        if(theIndex > 0){
+            String[] theDateBits = theDateString.split("-");
+            if(theDateBits.length > 1){
+                SimpleDateFormat theDateFormat = new SimpleDateFormat("EEE dd MMM yyyy");
+                theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));     
+                
+                try {
+                    Date startDateBit = theDateFormat.parse(theDateBits[0].trim()  + " 2012");
+                    Date endDateBit = theDateFormat.parse(theDateBits[1].trim() + " 2012");
+
+                    Date theCounterDate = startDateBit;
+                    while(!theCounterDate.after(endDateBit)){
+                        SimpleDateFormat theDMYFormat = new SimpleDateFormat("dd/MM/yyyy");
+                        theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                        String dateAsString = theDMYFormat.format(theCounterDate);
+                        theDates.add(dateAsString);
+                        theCounterDate.setTime(theCounterDate.getTime() + 24 * 60 * 60 * 1000);                       
+                    }
+                } catch (ParseException ex) {
+                    theLogger.log(Level.SEVERE, null, ex);
+                }
+            } 
+        } else {
+            theDates.add(getDate());       
+        }
+        
+        return theDates;
     }
 
     /*
@@ -366,7 +405,7 @@ public class EdSciEventDetailPage {
         Position refPosition = null;
 
         try {
-            EdSciEventDetailPage thePage = new EdSciEventDetailPage(locationRef, theLogger);
+            EdSciEventDetailPage thePage = new EdSciEventDetailPage(locationRef, "", theLogger);
             refPosition = thePage.getPageCoords();
         } catch (Exception e) {
             theLogger.log(Level.SEVERE, "Cannot get location page", e);
@@ -518,7 +557,7 @@ public class EdSciEventDetailPage {
 
             try {
                 in = theEntity.getContent();
-                StringBuffer buffer = new StringBuffer();
+                StringBuilder buffer = new StringBuilder();
 
                 InputStreamReader isr = new InputStreamReader(in, "UTF8");
                 Reader theReader = new BufferedReader(isr);

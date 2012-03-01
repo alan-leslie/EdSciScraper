@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
@@ -32,7 +31,7 @@ public class PageTest {
             URL theURL = new URL("http://www.sciencefestival.co.uk/whats-on/categories/talk/the-story-of-time");
             Logger theLogger = Logger.getLogger(PageTest.class.getName());
         
-            EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, theLogger);            
+            EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, "", theLogger);            
             
             URL pageURL = thePage.getURL(); 
             String theVenueName = thePage.getVenueName();
@@ -82,7 +81,7 @@ public class PageTest {
             URL theURL = new URL("http://www.sciencefestival.co.uk/whats-on/categories/talk/build-your-own-time-machine");
             Logger theLogger = Logger.getLogger(PageTest.class.getName());
         
-            EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, theLogger);            
+            EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, "", theLogger);            
             
             URL pageURL = thePage.getURL(); 
             String theVenueName = thePage.getVenueName();
@@ -98,14 +97,14 @@ public class PageTest {
             Calendar endDate = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
             endDate.setTime(thePeriod.getEndDate());
             assertEquals(2012, startDate.get(Calendar.YEAR));
-            assertEquals(3, startDate.get(Calendar.MONTH));
-            assertEquals(2, startDate.get(Calendar.DAY_OF_MONTH));
-            assertEquals(17, startDate.get(Calendar.HOUR_OF_DAY));
-            assertEquals(30, startDate.get(Calendar.MINUTE));
+            assertEquals(2, startDate.get(Calendar.MONTH));
+            assertEquals(31, startDate.get(Calendar.DAY_OF_MONTH));
+            assertEquals(12, startDate.get(Calendar.HOUR_OF_DAY));
+            assertEquals(0, startDate.get(Calendar.MINUTE));
             assertEquals(2012, endDate.get(Calendar.YEAR));
-            assertEquals(3, endDate.get(Calendar.MONTH));
-            assertEquals(2, endDate.get(Calendar.DAY_OF_MONTH));
-            assertEquals(19, endDate.get(Calendar.HOUR_OF_DAY));
+            assertEquals(2, endDate.get(Calendar.MONTH));
+            assertEquals(31, endDate.get(Calendar.DAY_OF_MONTH));
+            assertEquals(12, endDate.get(Calendar.HOUR_OF_DAY));
             assertEquals(0, endDate.get(Calendar.MINUTE));
             
             assert(thePosition.getLatitude().equalsIgnoreCase("55.950790"));
@@ -121,7 +120,57 @@ public class PageTest {
             Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+    /**
+     * 
+     */
+    @Test
+    public void testMultiPeriodDetailPage() {
+        try {
+//            URL theURL = new URL("http://localhost/the-story-of-time");
+            URL theURL = new URL("http://www.sciencefestival.co.uk/whats-on/categories/show/flying-start");
+            Logger theLogger = Logger.getLogger(PageTest.class.getName());
+            String theDateString = "Sat 31 Mar - Sun 15 Apr";
+        
+            EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, theDateString, theLogger);            
+            
+            URL pageURL = thePage.getURL(); 
+            String theVenueName = thePage.getVenueName();
+            List<Period> thePeriods = thePage.getPeriods();     // this could be multiples
+            Position thePosition = thePage.getPosition();
+            Period thePeriod = thePeriods.get(0);
+            
+            assertEquals(theURL, pageURL);   
+            assertEquals(16, thePeriods.size());            
+            assertEquals(false, thePeriod.hasDuration());
+            Calendar startDate = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+            startDate.setTime(thePeriod.getStartDate());
+            Calendar endDate = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+            endDate.setTime(thePeriod.getEndDate());
+            assertEquals(2012, startDate.get(Calendar.YEAR));
+            assertEquals(2, startDate.get(Calendar.MONTH));
+            assertEquals(31, startDate.get(Calendar.DAY_OF_MONTH));
+            assertEquals(12, startDate.get(Calendar.HOUR_OF_DAY));
+            assertEquals(0, startDate.get(Calendar.MINUTE));
+            assertEquals(2012, endDate.get(Calendar.YEAR));
+            assertEquals(2, endDate.get(Calendar.MONTH));
+            assertEquals(31, endDate.get(Calendar.DAY_OF_MONTH));
+            assertEquals(12, endDate.get(Calendar.HOUR_OF_DAY));
+            assertEquals(0, endDate.get(Calendar.MINUTE));
+            
+            assert(thePosition.getLatitude().equalsIgnoreCase("55.995228"));
+            assert(thePosition.getLongitude().equalsIgnoreCase("-2.723450"));
+            assert(theVenueName.equalsIgnoreCase("National Museum of Flight"));
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
+        }catch (IOException ex) {
+            Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ParserConfigurationException ex) {
+            Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SAXException ex) {
+            Logger.getLogger(PageTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+        
    /**
      * 
      */

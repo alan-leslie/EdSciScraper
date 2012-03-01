@@ -274,7 +274,7 @@ public class RefThree implements Comparable {
      */
     public boolean complete() {
         try {
-            EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, theLogger);
+            EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, "", theLogger);
 
             thePosition = thePage.getPosition();
             List<Period> thePeriods = thePage.getPeriods();
