@@ -107,7 +107,7 @@ public class Constructor implements Callable<String> {
             HTMLLink theRef = theCandidates.get(i);
 
             if (!linksAdded.contains(theRef.getHREF())) {
-                RefThree theWorkloadItem = new RefThree(theRef.getText(), theRef.getHREF(), theLogger);
+                RefThree theWorkloadItem = new RefThree(theRef.getText(), theRef.getHREF(), theRef.getPeriodString(), theLogger);
                 theLogger.log(Level.INFO, "Construction worker - processing link : {0}", theRef.getText());
 
                 owner.addWorkload(theWorkloadItem);

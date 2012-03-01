@@ -5,6 +5,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.logging.Level;
@@ -17,18 +18,17 @@ import java.util.logging.Logger;
 public class RefThree implements Comparable {
 
     String theName;
-    private String dateString = "";
-    private String timeString = "";
     private Position thePosition;
     private URL theLocationRef;
     private URL thePlace;
-    private Period thePeriod;
     private URL theURL;
     private String theHREF;
     private String theAges = "";
     private String thePrice = "";
     private String theEventId = "";
     private String theVenueName = "";
+    private String theDatePeriodString = "";
+    private List<Period> thePeriods = null;
     
     private final Logger theLogger;
 
@@ -36,13 +36,16 @@ public class RefThree implements Comparable {
      * 
      * @param theTitle 
      * @param theHREF 
+     * @param theDatePeriodString 
      * @param logger 
      */
     public RefThree(String theTitle,
             String theHREF,
+            String theDatePeriodString,
             Logger logger) {
         this.theHREF = theHREF;
         String thePageHREF = theHREF;
+        this.theDatePeriodString = theDatePeriodString;
         theLogger = logger;
 
         try {
@@ -66,18 +69,13 @@ public class RefThree implements Comparable {
         }
         theLocationRef = theOther.theLocationRef;
         thePlace = theOther.thePlace;
-        if (theOther.thePeriod == null) {
-            thePeriod = null;
-        } else {
-            thePeriod = new Period(theOther.thePeriod.getStartDate(), theOther.thePeriod.getEndDate());
-        }
         theURL = theOther.theURL;
         theVenueName = theOther.theVenueName;
         thePrice = theOther.thePrice;
         theAges = theOther.theAges;
         theEventId = theOther.theEventId;
-        dateString = theOther.dateString;
-        timeString = theOther.timeString;
+        thePeriods = theOther.thePeriods;
+        theDatePeriodString = theOther.theDatePeriodString;
         theLogger = theOther.theLogger;
     }
 
@@ -91,6 +89,14 @@ public class RefThree implements Comparable {
             boolean asKML) {     
         DateFormat theDateTimeFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
         theDateTimeFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+        
+        for(Period thePeriod: thePeriods){
+            DateFormat theDateFormat = new SimpleDateFormat("EEE MMM dd");
+            theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+            String dateString = theDateFormat.format(thePeriod.getStartDate());
+            DateFormat theTimeFormat = new SimpleDateFormat("HH:mm");
+            theTimeFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+            String timeString = theTimeFormat.format(thePeriod.getStartDate());
 
         if (asKML) {
             ps.print("<Placemark>");
@@ -226,6 +232,7 @@ public class RefThree implements Comparable {
             ps.print("</event>");
             ps.println();
         }
+        }
     }
 
     /**
@@ -246,22 +253,6 @@ public class RefThree implements Comparable {
 
     /**
      * 
-     * @return - the period
-     */
-    public Period getPeriod() {
-        return thePeriod;
-    }
-
-    /**
-     * 
-     * @return - the date as a string
-     */
-    public String getDateString() {
-        return dateString;
-    }
-
-    /**
-     * 
      * @return - the position 
      */
     public Position getPosition() {
@@ -274,18 +265,19 @@ public class RefThree implements Comparable {
      */
     public boolean complete() {
         try {
-            EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, "", theLogger);
+            EdSciEventDetailPage thePage = new EdSciEventDetailPage(theURL, theDatePeriodString, theLogger);
 
             thePosition = thePage.getPosition();
-            List<Period> thePeriods = thePage.getPeriods();
-            if(thePeriods != null && thePeriods.size() > 0){
-                thePeriod = thePeriods.get(0);
-            }
+            thePeriods = thePage.getPeriods();
 
             // try to recover if data is only partially set
             if ((isPeriodSet() || isPositionSet()) && !(isPeriodSet() && isPositionSet())) {
                 if (!isPeriodSet()) {
-                    thePeriod = PeriodMap.getInstance().getPeriod(getId());
+                    Period theKnownPeriod = PeriodMap.getInstance().getPeriod(getId());
+                    if(thePeriods == null){
+                        thePeriods = new ArrayList<Period>();
+                    }
+                    thePeriods.add(theKnownPeriod);
                 }
 
                 if (!isPositionSet()) {
@@ -297,15 +289,6 @@ public class RefThree implements Comparable {
             theVenueName = thePage.getVenueName();
             theAges = thePage.getAges();
             thePrice = thePage.getPrice();
-
-            if (isPeriodSet()) {
-                DateFormat theDateFormat = new SimpleDateFormat("EEE MMM dd");
-                theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-                dateString = theDateFormat.format(thePeriod.getStartDate());
-                DateFormat theTimeFormat = new SimpleDateFormat("HH:mm");
-                theTimeFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-                timeString = theTimeFormat.format(thePeriod.getStartDate());
-            }
         } catch (Exception exc) {
             theLogger.log(Level.SEVERE, "Unable to parse: " + getId(), exc);
         }
@@ -329,7 +312,11 @@ public class RefThree implements Comparable {
      * @return - whether all of the period data has been set
      */
     private boolean isPeriodSet() {
-        return (thePeriod != null && thePeriod.isComplete());
+        if(thePeriods != null && thePeriods.size() > 0){
+            return true;
+        }
+    
+        return false;
     }
 
     /**

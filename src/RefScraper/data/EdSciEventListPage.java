@@ -100,8 +100,19 @@ public class EdSciEventListPage {
                 if (!theHREF.isEmpty()) {
                     theLogger.log(Level.INFO, "Found candidate :{0}", theTitle);
                     HTMLLink theCandidate = new HTMLLink(theTitle, theHREF);
+                    
+                    DateFormat theDateFormat = new SimpleDateFormat("EEE dd MMM");
+                    theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                    String theDatePeriodString = getDatePeriodString(childNode, theHREF);
+
+                    try {
+                        Date startDate = theDateFormat.parse(theDatePeriodString);
+                    } catch (ParseException ex) {
+                        theCandidate.setPeriodString(theDatePeriodString.replace("From ", ""));
+                        theLogger.log(Level.WARNING, "Parse failure on date for :{0}, setting it as period", theHREF);
+                    }
+                    
                     theCandidates.add(theCandidate);
-                    checkDate(childNode, theHREF);
                 }
             }
         } catch (Exception e) {
@@ -109,8 +120,10 @@ public class EdSciEventListPage {
         }
     }
 
-    private void checkDate(Node childNode,
+    private String getDatePeriodString(Node childNode,
             String theHREF) {
+        String datePeriodString = "";
+        
         try {
             //                String detailsSearchString = "../div[@class='details']/table/tr";  
             String detailsSearchString = "../div[@class='details']/table";
@@ -125,32 +138,24 @@ public class EdSciEventListPage {
                     Node theTable = detailsNodeList.item(0);
                     String theContent = theTable.getTextContent().trim();
                     String[] theContentBits = theContent.split("\n");
-                    String dateString = "";
 
                     if (theContentBits.length > 1) {
                         String theHeaderBit = theContentBits[0].trim();
                         String theDetailBit = theContentBits[1].trim();
 
                         if (theHeaderBit.equalsIgnoreCase("Date:")) {
-                            dateString = theDetailBit;
+                            datePeriodString = EdSciEventListPage.getAsciiText(theDetailBit);
                         }
-                    }
-
-                    DateFormat theDateFormat = new SimpleDateFormat("EEE dd MMM");
-                    theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-
-                    try {
-                        Date startDate = theDateFormat.parse(dateString);
-                    } catch (ParseException ex) {
-                        theLogger.log(Level.WARNING, "Parse failure on date for :{0}", theHREF);
                     }
                 }
             }
         } catch (XPathExpressionException ex) {
             Logger.getLogger(EdSciEventListPage.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+        return datePeriodString;
     }
-    
+        
     static String getAsciiText(String theText) {
         StringBuilder theBuilder = new StringBuilder();
         int lengthInChars = theText.length();
