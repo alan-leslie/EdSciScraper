@@ -312,7 +312,7 @@ public class EdSciEventDetailPage {
      */
     private String getDurationFromSummary(NodeList summaryData) {
         Node theValueNode = getValueNodeFromSummary(theSummary, "Duration:");
-        String retVal = null;
+        String retVal = "";
         
         if (theValueNode != null) {
             retVal = theValueNode.getTextContent();

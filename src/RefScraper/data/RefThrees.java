@@ -45,10 +45,10 @@ public class RefThrees {
     public void outputAsXML(String outputDir,
             boolean asKML) {
         String strSave = outputDir + "/";
-        String targetPath = strSave + "battles.xml";
+        String targetPath = strSave + "events.xml";
 
         if (asKML) {
-            targetPath = strSave + "battles.kml";
+            targetPath = strSave + "events.kml";
         }
 
         FileOutputStream fso = null;
@@ -123,7 +123,7 @@ public class RefThrees {
                 ps.println();
                 ps.print("wiki-url=\"http://simile.mit.edu/shelf/\"");
                 ps.println();
-                ps.print("wiki-section=\"Simile Battles Timeline\"");
+                ps.print("wiki-section=\"Simile Events Timeline\"");
                 ps.println();
                 ps.print(">");
                 ps.println();
