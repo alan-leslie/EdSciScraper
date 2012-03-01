@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -96,49 +97,57 @@ public class EdSciEventListPage {
                 String theHREF = theElement.getAttribute("href");
                 String theText = theElement.getTextContent();
 
-                if (!theText.isEmpty()){
+                if (!theHREF.isEmpty()) {
                     theLogger.log(Level.INFO, "Found candidate :{0}", theTitle);
                     HTMLLink theCandidate = new HTMLLink(theTitle, theHREF);
                     theCandidates.add(theCandidate);
-                }
-                
-//                String detailsSearchString = "../div[@class='details']/table/tr";  
-                String detailsSearchString = "../div[@class='details']/table";  
-                XPath detailsXpath = XPathFactory.newInstance().newXPath();
-                NodeList detailsNodeList = (NodeList) detailsXpath.evaluate(detailsSearchString, childNode, XPathConstants.NODESET);
-                
-                if(detailsNodeList != null){
-                    boolean dateFound = false;
-                    int detailsLength = detailsNodeList.getLength();
-                    
-                    if(detailsLength > 0){
-                        Node theTable = detailsNodeList.item(0);
-                        String theContent = theTable.getTextContent().trim();
-                        String[] theContentBits = theContent.split("\n");
-                        String dateString = "";
-                        
-                        if(theContentBits.length > 1){
-                            String theHeaderBit = theContentBits[0].trim();
-                            String theDetailBit = theContentBits[1].trim();                            
-                            
-                            if(theHeaderBit.equalsIgnoreCase("Date:")){
-                                dateString = theDetailBit;
-                            }
-                        }
-                        
-                        DateFormat theDateFormat = new SimpleDateFormat("EEE dd MMM");
-                        theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-
-                        try{
-                            Date startDate = theDateFormat.parse(dateString);  
-                        } catch (ParseException ex) {
-                            theLogger.log(Level.SEVERE, null, ex);
-                        }  
-                    }
+                    checkDate(childNode, theHREF);
                 }
             }
         } catch (Exception e) {
             theLogger.log(Level.SEVERE, "Exception on XPath: ", e);
+        }
+    }
+
+    private void checkDate(Node childNode,
+            String theHREF) {
+        try {
+            //                String detailsSearchString = "../div[@class='details']/table/tr";  
+            String detailsSearchString = "../div[@class='details']/table";
+            XPath detailsXpath = XPathFactory.newInstance().newXPath();
+            NodeList detailsNodeList = (NodeList) detailsXpath.evaluate(detailsSearchString, childNode, XPathConstants.NODESET);
+
+            if (detailsNodeList != null) {
+                boolean dateFound = false;
+                int detailsLength = detailsNodeList.getLength();
+
+                if (detailsLength > 0) {
+                    Node theTable = detailsNodeList.item(0);
+                    String theContent = theTable.getTextContent().trim();
+                    String[] theContentBits = theContent.split("\n");
+                    String dateString = "";
+
+                    if (theContentBits.length > 1) {
+                        String theHeaderBit = theContentBits[0].trim();
+                        String theDetailBit = theContentBits[1].trim();
+
+                        if (theHeaderBit.equalsIgnoreCase("Date:")) {
+                            dateString = theDetailBit;
+                        }
+                    }
+
+                    DateFormat theDateFormat = new SimpleDateFormat("EEE dd MMM");
+                    theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+                    try {
+                        Date startDate = theDateFormat.parse(dateString);
+                    } catch (ParseException ex) {
+                        theLogger.log(Level.WARNING, "Parse failure on date for :{0}", theHREF);
+                    }
+                }
+            }
+        } catch (XPathExpressionException ex) {
+            Logger.getLogger(EdSciEventListPage.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }

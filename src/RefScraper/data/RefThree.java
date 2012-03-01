@@ -177,9 +177,9 @@ public class RefThree implements Comparable {
             ps.print("<Point>");
             ps.println();
             ps.print("<coordinates>");
-            ps.print(thePosition.getLongitudeDD());
+            ps.print(thePosition.getLongitude());
             ps.print(",");
-            ps.print(thePosition.getLatitudeDD());
+            ps.print(thePosition.getLatitude());
             ps.print("</coordinates>");
             ps.println();
             ps.print("</Point>");
@@ -277,7 +277,7 @@ public class RefThree implements Comparable {
             thePrice = thePage.getPrice();
 
             if (isPeriodSet()) {
-                dateString = thePeriod.asLongString();
+                dateString = thePeriod.getStartDate().toGMTString();
             }
         } catch (Exception exc) {
             theLogger.log(Level.SEVERE, "Unable to parse: " + getId(), exc);

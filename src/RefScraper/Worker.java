@@ -49,6 +49,12 @@ public class Worker implements Callable<RefThree> {
         theLogger.log(Level.FINEST, "Worker call - Completing: {0}", _placemark.getId());
         RefThree theResult = new RefThree(_placemark);
         boolean isError = !(theResult.complete());
+        
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Worker.class.getName()).log(Level.SEVERE, null, ex);
+        }
        
         if (isError) {
             theLogger.log(Level.INFO, "Worker call unsuccessful");
