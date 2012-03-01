@@ -3,7 +3,10 @@ package RefScraper.data;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,7 +17,8 @@ import java.util.logging.Logger;
 public class RefThree implements Comparable {
 
     String theName;
-    private String dateString;
+    private String dateString = "";
+    private String timeString = "";
     private Position thePosition;
     private URL theLocationRef;
     private URL thePlace;
@@ -73,6 +77,7 @@ public class RefThree implements Comparable {
         theAges = theOther.theAges;
         theEventId = theOther.theEventId;
         dateString = theOther.dateString;
+        timeString = theOther.timeString;
         theLogger = theOther.theLogger;
     }
 
@@ -83,7 +88,9 @@ public class RefThree implements Comparable {
      * timeline (XML)
      */
     public void outputAsXML(PrintStream ps,
-            boolean asKML) {
+            boolean asKML) {     
+        DateFormat theDateTimeFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
+        theDateTimeFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
         if (asKML) {
             ps.print("<Placemark>");
@@ -117,17 +124,17 @@ public class RefThree implements Comparable {
             if (thePeriod.hasDuration()) {
                 ps.print("<TimeSpan>");
                 ps.print("<begin>");
-                ps.print(thePeriod.getStartDate().toString());
+                ps.print(theDateTimeFormat.format(thePeriod.getStartDate()));
                 ps.print("</begin>");
                 ps.print("<end>");
-                ps.print(thePeriod.getEndDate().toString());
+                ps.print(theDateTimeFormat.format(thePeriod.getEndDate()));
                 ps.print("</end>");
                 ps.print("</TimeSpan>");
                 ps.println();
             } else {
                 ps.print("<TimeStamp>");
                 ps.print("<when>");
-                ps.print(thePeriod.getStartDate().toString());
+                ps.print(theDateTimeFormat.format(thePeriod.getStartDate()));
                 ps.print("</when>");
                 ps.print("</TimeStamp>");
                 ps.println();
@@ -153,9 +160,10 @@ public class RefThree implements Comparable {
             ps.print("</value>");
             ps.println();
             ps.println("</Data>");
-            ps.println("<Data name=\"VenueName\">");
+            ps.println("<Data name=\"LocationName\">");
             ps.print("<value>");
             ps.print(theVenueName);
+            ps.print(", Edinburgh");
             ps.print("</value>");
             ps.println();   
             ps.println("</Data>");
@@ -165,9 +173,23 @@ public class RefThree implements Comparable {
             ps.print("</value>");
             ps.println();
             ps.println("</Data>");
+            ps.println("<Data name=\"TimeString\">");
+            ps.print("<value>");
+            ps.print(timeString);
+            ps.print("</value>");
+            ps.println();
+            ps.println("</Data>");
+            ps.println("<Data name=\"LatLonStr\">");
+            ps.print("<value>");
+            ps.print(thePosition.getLatitude());
+            ps.print(",");
+            ps.print(thePosition.getLongitude());
+            ps.print("</value>");
+            ps.println();
+            ps.println("</Data>");
             ps.println("<Data name=\"Url\">");
             ps.print("<value>");
-            ps.print(theURL);
+            ps.print(theURL.toString());
             ps.print("</value>");
             ps.println();
             ps.println("</Data>");
@@ -189,11 +211,11 @@ public class RefThree implements Comparable {
         } else {
             ps.print("<event ");
             ps.print("start=\"");
-            ps.print(thePeriod.getStartDate().toString());
+            ps.print(theDateTimeFormat.format(thePeriod.getStartDate()));
             ps.print("\" ");
             if (thePeriod.hasDuration()) {
                 ps.print("end=\"");
-                ps.print(thePeriod.getEndDate().toString());
+                ps.print(theDateTimeFormat.format(thePeriod.getEndDate()));
                 ps.print("\" ");
             }
 
@@ -277,7 +299,12 @@ public class RefThree implements Comparable {
             thePrice = thePage.getPrice();
 
             if (isPeriodSet()) {
-                dateString = thePeriod.getStartDate().toGMTString();
+                DateFormat theDateFormat = new SimpleDateFormat("EEE MMM dd");
+                theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                dateString = theDateFormat.format(thePeriod.getStartDate());
+                DateFormat theTimeFormat = new SimpleDateFormat("HH:mm");
+                theTimeFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                timeString = theTimeFormat.format(thePeriod.getStartDate());
             }
         } catch (Exception exc) {
             theLogger.log(Level.SEVERE, "Unable to parse: " + getId(), exc);
