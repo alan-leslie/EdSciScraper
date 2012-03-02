@@ -52,6 +52,7 @@ public class EdSciEventDetailPage {
     /**
      * Constructs model of Edinburgh science festival detail page.
      * @param newURL 
+     * @param theDateString 
      * @param logger
      * @throws IOException
      * @throws ParserConfigurationException
@@ -183,22 +184,24 @@ public class EdSciEventDetailPage {
         if (theSummary != null) {
             int theDuration = getDurationMinutesFromSummary(theSummary);
             String theEventId = getEventId();
-            
-            for(String theDate: theDates){         
-                String theTime = getTime(theEventId, theDate);
 
-                SimpleDateFormat theDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-                theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+            for (String theDate : theDates) {
+                List<String> theTimes = getTimes(theEventId, theDate);
 
-                try {
-                    Date startDate = theDateFormat.parse(theDate + " " + theTime);
-                    Date endDate = theDateFormat.parse(theDate + " " + theTime);
-                    endDate.setTime(endDate.getTime() + theDuration * 60 * 1000);
+                for (String theTime : theTimes) {
+                    SimpleDateFormat theDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+                    theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-                    Period thePeriod = new Period(startDate, endDate);
-                    thePeriods.add(thePeriod);
-                } catch (ParseException ex) {
-                    theLogger.log(Level.SEVERE, null, ex);
+                    try {
+                        Date startDate = theDateFormat.parse(theDate + " " + theTime);
+                        Date endDate = theDateFormat.parse(theDate + " " + theTime);
+                        endDate.setTime(endDate.getTime() + theDuration * 60 * 1000);
+
+                        Period thePeriod = new Period(startDate, endDate);
+                        thePeriods.add(thePeriod);
+                    } catch (ParseException ex) {
+                        theLogger.log(Level.SEVERE, null, ex);
+                    }
                 }
             }
         }
@@ -209,33 +212,33 @@ public class EdSciEventDetailPage {
     private List<String> getDates() {
         List<String> theDates = new ArrayList<String>();
         int theIndex = theDateString.indexOf(" - ");
-        
-        if(theIndex > 0){
+
+        if (theIndex > 0) {
             String[] theDateBits = theDateString.split("-");
-            if(theDateBits.length > 1){
+            if (theDateBits.length > 1) {
                 SimpleDateFormat theDateFormat = new SimpleDateFormat("EEE dd MMM yyyy");
-                theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));     
-                
+                theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+
                 try {
-                    Date startDateBit = theDateFormat.parse(theDateBits[0].trim()  + " 2012");
+                    Date startDateBit = theDateFormat.parse(theDateBits[0].trim() + " 2012");
                     Date endDateBit = theDateFormat.parse(theDateBits[1].trim() + " 2012");
 
                     Date theCounterDate = startDateBit;
-                    while(!theCounterDate.after(endDateBit)){
+                    while (!theCounterDate.after(endDateBit)) {
                         SimpleDateFormat theDMYFormat = new SimpleDateFormat("dd/MM/yyyy");
                         theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
                         String dateAsString = theDMYFormat.format(theCounterDate);
                         theDates.add(dateAsString);
-                        theCounterDate.setTime(theCounterDate.getTime() + 24 * 60 * 60 * 1000);                       
+                        theCounterDate.setTime(theCounterDate.getTime() + 24 * 60 * 60 * 1000);
                     }
                 } catch (ParseException ex) {
                     theLogger.log(Level.SEVERE, null, ex);
                 }
-            } 
+            }
         } else {
-            theDates.add(getDate());       
+            theDates.add(getDate());
         }
-        
+
         return theDates;
     }
 
@@ -536,9 +539,9 @@ public class EdSciEventDetailPage {
         return thePosition;
     }
 
-    private String getTime(String eventId,
+    private List<String> getTimes(String eventId,
             String theDate) {
-        String retVal = null;
+        List<String> retVal = new ArrayList<String>();
         StringBuilder theBuilder = new StringBuilder("http://www.sciencefestival.co.uk/json_event_performances?booking[event_id]=");
         theBuilder.append(eventId);
         theBuilder.append("&booking[date]=");
@@ -569,18 +572,25 @@ public class EdSciEventDetailPage {
                 String theJSONData = buffer.toString();
                 try {
                     JSONObject theObject = new JSONObject(theJSONData);
-                    JSONObject theTimes = (JSONObject) theObject.get("times");
-                    JSONArray names = theTimes.names();
 
-                    int arrayLength = names.length();
+                    if (theObject.has("times")) {
+                        Object theTimesObject = theObject.get("times");
 
-                    if (arrayLength > 0) {
-                        retVal = names.getString(0);
-                    }
+                        if (theTimesObject instanceof JSONObject) {
+                            JSONObject theTimes = (JSONObject) theTimesObject;
+                            JSONArray names = theTimes.names();
 
-                    if (arrayLength > 1) {
-                        String logMessage = "There is more than one time for" + getURL().toString();
-                        theLogger.log(Level.SEVERE, logMessage);
+                            int arrayLength = names.length();
+
+                            if (arrayLength > 0) {
+                                for (int i = (arrayLength - 1); i >= 0; --i) {
+                                    String theTime = names.getString(i);
+                                    retVal.add(theTime);
+                                }
+                            }
+                        } else {
+                            theLogger.log(Level.WARNING, "Times empty (sold out?) for:{0}", theURL.toString());
+                        }
                     }
                 } catch (JSONException ex) {
                     theLogger.log(Level.SEVERE, null, ex);
