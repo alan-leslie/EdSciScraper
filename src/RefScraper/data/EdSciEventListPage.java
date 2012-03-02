@@ -104,7 +104,8 @@ public class EdSciEventListPage {
 
                 if (!theHREF.isEmpty()) {
                     theLogger.log(Level.INFO, "Found candidate :{0}", theTitle);
-                    HTMLLink theCandidate = new HTMLLink(theTitle, theHREF);
+                    String cleanTitle = theTitle.replace("&", "and");
+                    HTMLLink theCandidate = new HTMLLink(cleanTitle, theHREF);
                     
                     DateFormat theDateFormat = new SimpleDateFormat("EEE dd MMM");
                     theDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
