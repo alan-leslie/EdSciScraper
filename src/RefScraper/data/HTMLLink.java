@@ -9,7 +9,7 @@ public class HTMLLink {
     private String theText;
     private String theHREF;
     private String thePeriodString = "";
-    private static String theBaseURL = "http://en.wikipedia.org";
+    private static String theBaseURL = "http://http://www.sciencefestival.co.uk";
 
     /*
      * @param - text 

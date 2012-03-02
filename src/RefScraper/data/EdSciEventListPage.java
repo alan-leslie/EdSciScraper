@@ -23,7 +23,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * Model of wikipedia page that contains lists of items to be processed
+ * Model of science festival page that contains lists of items to be processed
  * @author al
  */
 public class EdSciEventListPage {
@@ -31,7 +31,7 @@ public class EdSciEventListPage {
     private final URL theURL;
     private final Document theDocument;
     private final Logger theLogger;
-    private static String theBaseURL = "http://http://www.sciencefestival.co.uk";
+    private static String theBaseURL = "http://www.sciencefestival.co.uk";
 
     /**
      * Constructs model of edinburgh science festival list page.
@@ -95,6 +95,11 @@ public class EdSciEventListPage {
                 Element theElement = (Element) childNode;
                 String theTitle = theElement.getAttribute("title");
                 String theHREF = theElement.getAttribute("href");
+                
+                if(!theHREF.startsWith("http://")){
+                    theHREF = getBaseURL() + theHREF;
+                }
+                
                 String theText = theElement.getTextContent();
 
                 if (!theHREF.isEmpty()) {
@@ -143,7 +148,8 @@ public class EdSciEventListPage {
                         String theHeaderBit = theContentBits[0].trim();
                         String theDetailBit = theContentBits[1].trim();
 
-                        if (theHeaderBit.equalsIgnoreCase("Date:")) {
+                        if (theHeaderBit.equalsIgnoreCase("Date:") ||
+                            theHeaderBit.equalsIgnoreCase("Dates:")) {
                             datePeriodString = EdSciEventListPage.getAsciiText(theDetailBit);
                         }
                     }

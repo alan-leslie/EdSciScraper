@@ -1,7 +1,7 @@
 package RefScraper.ui;
 
 /**
- * Interface to model display of progress of wikipedia page scrape.
+ * Interface to model display of progress of scince festival page scrape.
  * @author al
  */
 public interface ScrapeProgressDisplay {
