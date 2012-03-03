@@ -87,6 +87,10 @@ public class RefThree implements Comparable {
      */
     public void outputAsXML(PrintStream ps,
             boolean asKML) {     
+        if(!isComplete()){
+            return;
+        }
+        
         DateFormat theDateTimeFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy");
         theDateTimeFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         
@@ -277,7 +281,10 @@ public class RefThree implements Comparable {
                     if(thePeriods == null){
                         thePeriods = new ArrayList<Period>();
                     }
-                    thePeriods.add(theKnownPeriod);
+                    
+                    if(theKnownPeriod != null){
+                        thePeriods.add(theKnownPeriod);
+                    }
                 }
 
                 if (!isPositionSet()) {
